@@ -1,10 +1,3 @@
-//
-//  RBBannerView.m
-//  KeLuTravelProgram
-//
-//  Created by qianfeng on 15/10/26.
-//  Copyright © 2015年 wrb. All rights reserved.
-//
 
 #import "RBBannerView.h"
 #import "UIImageView+AFNetworking.h"
