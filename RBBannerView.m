@@ -27,16 +27,6 @@
     [self createUI];
 }
 
--(UIView *)leftView
-{
-    if (_leftView == nil)
-    {
-        UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
-        _leftView = view;
-    }
-    return _leftView;
-}
-
 -(void)createUI
 {
     [self scrollView];
@@ -105,6 +95,16 @@
 }
 
 #pragma mark - 视图控件懒加载
+-(UIView *)leftView
+{
+    if (_leftView == nil)
+    {
+        UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
+        _leftView = view;
+    }
+    return _leftView;
+}
+
 -(UIScrollView *)scrollView
 {
     if (_scrollView == nil)
