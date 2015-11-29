@@ -8,7 +8,7 @@
 
 #import "RBBannerView.h"
 #import "UIImageView+AFNetworking.h"
-#import "UIViewAdditions.h"
+#import "Masonry.h"
 
 #define ScreenWidth [UIScreen mainScreen].bounds.size.width
 #define BannerHeight 200.
@@ -16,6 +16,7 @@
 @interface RBBannerView ()<UIScrollViewDelegate>
 @property (nonatomic, weak) UIScrollView *scrollView;
 @property (nonatomic, weak) UIPageControl *pageControl;
+@property (nonatomic, weak) UIView *leftView;
 @property (nonatomic, weak) NSTimer *timer;
 @property (nonatomic, strong) NSArray *imageViewArray;
 @end
@@ -34,30 +35,38 @@
     [self createUI];
 }
 
+-(UIView *)leftView
+{
+    if (_leftView == nil)
+    {
+        UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
+        _leftView = view;
+    }
+    return _leftView;
+}
+
 -(void)createUI
 {
     [self scrollView];
     [self pageControl];
     
     NSMutableArray *imageArray = [NSMutableArray array];
-    [imageArray addObject:[self.imageArray lastObject]];
-    [imageArray addObjectsFromArray:self.imageArray];
-    [imageArray addObject:[self.imageArray firstObject]];
+    if (self.imageArray.count != 0)
+    {
+        [imageArray addObject:[self.imageArray lastObject]];
+        [imageArray addObjectsFromArray:self.imageArray];
+        [imageArray addObject:[self.imageArray firstObject]];
+    }
     
     NSMutableArray *imageViewArray = [NSMutableArray array];
     
     float x = 0;
     for (NSInteger i=0; i<imageArray.count; i++)
     {
-        UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(x, 0, self.width, self.height)];
-        
+        UIImageView *imageView = [[UIImageView alloc] init];
         NSString *imageUrl = imageArray[i];
-        
         [imageView setImageWithURL:[NSURL URLWithString:imageUrl]];
-        
         [self.scrollView addSubview:imageView];
-        
-        x += self.width;
         
         imageView.tag = i;
         imageView.userInteractionEnabled = YES;
@@ -66,12 +75,29 @@
         
         [imageViewArray addObject:imageView];
     }
-    [imageViewArray removeObjectAtIndex:0];
-    [imageViewArray removeLastObject];
-    self.imageViewArray = imageViewArray;
     
-    self.scrollView.contentSize = CGSizeMake(x, self.height);
-    self.scrollView.contentOffset = CGPointMake(self.width, 0);
+    for (NSInteger i=0; i<imageArray.count; i++)
+    {
+        UIImageView *imageView = imageViewArray[i];
+        UIView *leftView = i==0?self.leftView:imageViewArray[i-1];
+        [imageView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(leftView.mas_right);
+            make.top.equalTo(@(0));
+            make.width.equalTo(@(ScreenWidth));
+            make.height.equalTo(@(BannerHeight));
+        }];
+        x += ScreenWidth;
+    }
+    
+    if (imageViewArray.count != 0)
+    {
+        [imageViewArray removeObjectAtIndex:0];
+        [imageViewArray removeLastObject];
+        self.imageViewArray = imageViewArray;
+    }
+    
+    self.scrollView.contentSize = CGSizeMake(x, self.frame.size.height);
+    self.scrollView.contentOffset = CGPointMake(self.frame.size.width, 0);
     
     [self startScroll];
 }
@@ -82,7 +108,7 @@
     NSLog(@"%ld",gesture.view.tag);
     if (self.imageViewTouchBlock)
     {
-    
+        
     }
 }
 
@@ -113,7 +139,7 @@
         _pageControl = pageControl;
         CGFloat pageX = 130;
         CGFloat pageH = 20;
-        CGFloat pageY = self.height - pageH - 10;
+        CGFloat pageY = self.frame.size.height - pageH - 10;
         CGFloat pageW = 100;
         pageControl.frame = CGRectMake(pageX, pageY, pageW, pageH);
         pageControl.numberOfPages = self.imageArray.count;
@@ -129,7 +155,7 @@
     
     self.pageControl.currentPage = currentPage;
     
-    CGFloat pointX = self.scrollView.width * (currentPage + 1);
+    CGFloat pointX = self.scrollView.frame.size.width * (currentPage + 1);
     
     self.scrollView.contentOffset = CGPointMake(pointX, 0);
 }
@@ -156,7 +182,7 @@
 -(void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
 
 {
-    NSInteger page = scrollView.contentOffset.x / scrollView.width - 1;
+    NSInteger page = scrollView.contentOffset.x / scrollView.frame.size.width - 1;
     
     self.pageControl.currentPage  = page;
     
@@ -164,13 +190,13 @@
     {
         self.pageControl.currentPage = 0;
         
-        [self.scrollView setContentOffset:CGPointMake(self.width, 0) animated:NO];
+        [self.scrollView setContentOffset:CGPointMake(self.frame.size.width, 0) animated:NO];
     }
     else if (page == -1)
     {
         self.pageControl.currentPage = self.imageArray.count;
         
-        [self.scrollView setContentOffset:CGPointMake(self.width * self.imageArray.count, 0) animated:NO];
+        [self.scrollView setContentOffset:CGPointMake(self.frame.size.width * self.imageArray.count, 0) animated:NO];
     }
 }
 
@@ -195,15 +221,17 @@
         CGRect selfFrame = self.frame;
         selfFrame.origin.y = offset;
         selfFrame.size.height = BannerHeight - offset;
+        selfFrame.origin.x = offset/2;
+        selfFrame.size.width = ScreenWidth - offset;
         self.frame = selfFrame;
         
         _scrollView.frame = selfFrame;
         
         UIImageView *imageView = _imageViewArray[count];
-        CGRect imageFrame = imageView.frame;
-        imageFrame.size.width = ScreenWidth - offset;
-        imageFrame.size.height = BannerHeight - offset;
-        imageView.frame = imageFrame;
+        [imageView mas_updateConstraints:^(MASConstraintMaker *make) {
+             make.width.equalTo(@(ScreenWidth-offset));
+             make.height.equalTo(@(BannerHeight-offset));
+        }];
     }
     else
     {
